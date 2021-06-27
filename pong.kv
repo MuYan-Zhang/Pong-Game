@@ -1,0 +1,47 @@
+<PongBall>:
+    size: 13, 13
+    canvas:
+        Rectangle:
+            pos: self.pos
+            size: self.size
+            Color:
+                rgba: 1, 0, 0, 1
+
+<PongPaddle>
+    size: 15, 100
+    canvas:
+        Rectangle:
+            pos: self.pos
+            size: self.size
+
+<PongWidget>
+    ball: pong_ball
+    playerL: pL
+    playerR: pR
+
+    Label:
+        font_size: 70
+        center_x: root.width/4
+        top: root.height/3*2
+        text: str(root.playerL.score)
+
+    Label:
+        font_size: 70
+        center_x: root.width/4*3
+        top: root.height/3*2
+        text: str(root.playerR.score)
+        
+    PongBall:
+        id: pong_ball
+        center: root.center
+
+    PongPaddle:
+        id: pL
+        x: root.x
+        center_y: root.center_y
+
+    PongPaddle:
+        id: pR
+        # "self" refers to the paddle
+        x: root.width - self.width
+        center_y: root.center_y
