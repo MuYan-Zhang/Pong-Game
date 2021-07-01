@@ -4,20 +4,26 @@
         Rectangle:
             pos: self.pos
             size: self.size
-            Color:
-                rgba: 1, 0, 0, 1
 
-<PongPaddle>
+<PongPaddle>:
     size: 15, 100
     canvas:
         Rectangle:
             pos: self.pos
             size: self.size
 
-<PongWidget>
+<PowerUp>:
+    size: 30, 30
+    canvas:
+        Rectangle:
+            pos: self.pos
+            size: self.size
+
+<PongWidget>:
     ball: pong_ball
     playerL: pL
     playerR: pR
+    power: pu
 
     Label:
         font_size: 70
@@ -45,3 +51,7 @@
         # "self" refers to the paddle
         x: root.width - self.width
         center_y: root.center_y
+
+    PowerUp:
+        id: pu
+
