@@ -6,6 +6,7 @@ from kivy.graphics import Rectangle
 from kivy.core.window import Window
 from kivy.clock import Clock
 from kivy.vector import Vector
+from kivy.animation import Animation
 from math import sqrt
 from time import sleep
 from functools import partial
@@ -28,7 +29,7 @@ class PongPaddle(Widget):
         if self.collide_widget(ball):
             # print("hitting x coord: {}".format(ball.x))
             vx, vy = ball.velocity
-            print("vx1: {}, vy1: {}, mag1: {}".format(vx, vy, sqrt(vx**2 + vy**2)))
+            # print("vx1: {}, vy1: {}, mag1: {}".format(vx, vy, sqrt(vx**2 + vy**2)))
             offset = (ball.center_y - self.center_y) / (self.height / 2)
             ball.velocity = -1*vx, vy + offset
             # print("final ball velocity: {}".format(ball.velocity))
@@ -39,12 +40,12 @@ class PowerUp(Widget):
         self.x = uniform(p_wid.width/6, p_wid.width/6*5)
         self.y = uniform(p_wid.top/6, p_wid.top/6*5)
 
-    def is_hit_lengthen(self, ball, p_wid):
+    def hit_lengthen(self, ball, p_wid):
         if (self.collide_widget(ball)):
             l_factor = 1.3 # How much to lengthen by
             vx = ball.velocity[0]
             
-            if (vx < 0): # Player R gets pu
+            if (vx < 0): # Player R gets power up
                 p_wid.playerR.size[1] *= l_factor
                 Clock.schedule_once(partial(self.revert_eff, p_wid.playerR, l_factor), 10)
             else:
@@ -62,6 +63,7 @@ class PongWidget(Widget):
     playerL = ObjectProperty(None)
     playerR = ObjectProperty(None)
     power = ObjectProperty(None)
+    gover_msg = ObjectProperty(None)
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -72,7 +74,9 @@ class PongWidget(Widget):
 
         # Tracks currently pressed keys, allows multiple keys to be registered at once
         self.pressed_keys = set()
-        self.start_flag = False
+        self.gover_anim = Animation(opacity = 1, duration = 1) + Animation(opacity = 0, duration = 1)
+        self.gover_anim.repeat = True
+        self.over_flag = False
 
     def _on_keyboard_close(self):
         self._keyboard.unbind(on_key_down = self._on_key_down)
@@ -87,7 +91,7 @@ class PongWidget(Widget):
         if text in self.pressed_keys:
             self.pressed_keys.remove(text)
 
-    def move_bars(self, dt):
+    def keyboard_input(self, dt):
         currentL_x = self.playerL.pos[0]; currentL_y = self.playerL.pos[1]
         currentR_x = self.playerR.pos[0]; currentR_y = self.playerR.pos[1]
 
@@ -106,12 +110,26 @@ class PongWidget(Widget):
         self.playerL.pos = (currentL_x, currentL_y)
         self.playerR.pos = (currentR_x, currentR_y)
 
+        if ('r' in self.pressed_keys and self.over_flag is True): #Restarts game
+            self.over_flag = False
+            Animation.cancel(self.gover_anim, self.gover_msg)
+            self.playerL.score = 0
+            self.playerR.score = 0
+            self.gover_msg.color = 1,0,0,0
+            self.serve_ball()
+
     def serve_ball(self, vel=(8,0)):
         self.ball.center = self.center
         self.playerL.center_y = self.center_y
         self.playerR.center_y = self.center_y
         self.ball.velocity = vel
 
+    def game_over(self): # Game over screen, starts the flashing text animation
+        self.ball.center = self.center
+        self.ball.velocity = (0,0)
+        self.gover_msg.color = 1, 0, 0, 1
+        self.gover_anim.start(self.gover_msg)
+            
     def update_ball(self, dt):
         self.ball.move_ball()
 
@@ -127,22 +145,33 @@ class PongWidget(Widget):
             
         # Score
         if (self.ball.x < self.x): #playerR wins
-            print("playerR winning velocity: {}".format(self.ball.velocity))
-            print("playerR winning x coord: {}".format(self.ball.x))
+            # print("playerR winning velocity: {}".format(self.ball.velocity))
+            # print("playerR winning x coord: {}".format(self.ball.x))
             self.playerR.score += 1
-            self.serve_ball()
+            if (self.playerR.score == 5): #let user set game rounds later
+                self.over_flag = True
+                self.game_over()
+            else:
+                self.serve_ball()
+
         if (self.ball.x > self.width): #playerL wins
             self.playerL.score += 1
-            self.serve_ball()
+            if (self.playerL.score == 5): #let user set game rounds later
+                self.over_flag = True
+                self.game_over()
+            else:
+                self.serve_ball()
 
-        self.power.is_hit_lengthen(self.ball, self)
+        self.power.hit_lengthen(self.ball, self)
 
 class PongApp(App):
     def build(self):
         game = PongWidget()
-        Clock.schedule_interval(game.move_bars, 0) # Want to execute "move_bars" every frame
+        Clock.schedule_interval(game.keyboard_input, 0) # Want to execute "keyboard_input" every frame
         game.serve_ball()
         Clock.schedule_interval(game.update_ball, 1/60) # Moves and checks the ball every 1/60th of a second
+        
+        # Spawn power up at random spot, then in random intervals
         game.power.spawn_pu(game, None)
         Clock.schedule_interval(partial(game.power.spawn_pu, game), randint(6, 12))
         return game

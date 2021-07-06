@@ -24,6 +24,7 @@
     playerL: pL
     playerR: pR
     power: pu
+    gover_msg: gover
 
     Label:
         font_size: 70
@@ -36,7 +37,15 @@
         center_x: root.width/4*3
         top: root.height/3*2
         text: str(root.playerR.score)
-        
+
+    Label:
+        id: gover
+        font_size: 30
+        center_x: root.width/2
+        top: root.height/3
+        text: "GAME OVER, PRESS 'R' TO RESTART"
+        color: 1,0,0,0
+
     PongBall:
         id: pong_ball
         center: root.center
